@@ -75,7 +75,7 @@ A real-time chat application built with Flutter and Firebase, allowing users to 
 - `uuid`
 
 ## Contributing
-Feel free to open issues or submit pull requests for improvements or bug fixes.
+Feel free to open issues or submit pull requests for improvements or bug fixes. There may be issue in firebase.rules
 
 ## License
 MIT License
