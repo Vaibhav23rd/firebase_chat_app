@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      match /userChats/{chatId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if debug(request.auth != null &&
+                                      debug(request.resource.data.chatId == chatId, 'chatId mismatch') &&
+                                      debug(request.resource.data.otherParticipantId is string, 'otherParticipantId not string') &&
+                                      debug(request.resource.data.otherParticipantId != userId, 'otherParticipantId is userId') &&
+                                      debug(exists(/databases//documents/users/), 'otherParticipantId does not exist'));
+      }
+    }
+    match /chats/{chatId} {
+      allow read: if request.auth != null && (!exists(/databases//documents/chats/) || get(/databases//documents/chats/).data.participants.hasAny([request.auth.uid]));
+      allow create: if request.auth != null &&
+                      request.resource.data.participants is list &&
+                      request.resource.data.participants.size() == 2 &&
+                      request.resource.data.participants.hasAny([request.auth.uid]);
+      allow update: if debug(request.auth != null &&
+                            debug(request.resource.data.participants is list, 'participants not list') &&
+                            debug(request.resource.data.participants.size() == 2, 'participants size not 2') &&
+                            debug(resource.data.participants.hasAny([request.auth.uid]), 'user not in participants'));
+      match /messages/{messageId} {
+        allow read: if request.auth != null && get(/databases//documents/chats/).data.participants.hasAny([request.auth.uid]);
+        allow create: if debug(request.auth != null &&
+                              debug(request.resource.data.senderId is string, 'senderId not string') &&
+                              debug(request.auth.uid == request.resource.data.senderId, 'senderId mismatch') &&
+                              debug(get(/databases//documents/chats/).data.participants.hasAny([request.auth.uid]), 'user not in participants'));
+      }
+    }
+  }
+  function debug(condition, message) {
+    return condition;
+  }
+}
